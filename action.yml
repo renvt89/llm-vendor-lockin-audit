@@ -1,0 +1,42 @@
+name: 'LLM Lock-in Scan'
+description: 'Read-only heuristic scan: lists LLM provider SDK imports and hard-coded model names in your repo. Not an audit or certification.'
+author: 'Rene Vergara'
+branding:
+  icon: 'search'
+  color: 'blue'
+inputs:
+  path:
+    description: 'Directory to scan (default: repo root)'
+    required: false
+    default: '.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Heuristic lock-in scan (read-only)
+      shell: bash
+      env:
+        SCAN_PATH: ${{ inputs.path }}
+      run: |
+        set -u
+        EXCL='--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=dist --exclude-dir=build --exclude-dir=.venv'
+        INC='--include=*.py --include=*.js --include=*.mjs --include=*.cjs --include=*.ts --include=*.tsx --include=*.go --include=*.rb --include=*.java --include=*.kt --include=*.rs --include=*.php --include=*.cs'
+        echo '== LLM lock-in scan (heuristic, read-only) =='
+        echo "Path: $SCAN_PATH"
+        echo
+        echo '-- Provider SDK imports / requires --'
+        total_sdk=0
+        for p in openai anthropic google-genai google.genai google.generativeai @google/genai @google/generative-ai vertexai cohere mistralai @mistralai groq together replicate @aws-sdk/client-bedrock langchain_openai langchain_anthropic @langchain/openai @langchain/anthropic; do
+          n=$(grep -rIlE $EXCL $INC "(import|from|require\(|use ).*${p}" "$SCAN_PATH" 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$n" -gt 0 ]; then echo "  $p: $n file(s)"; total_sdk=$((total_sdk+n)); fi
+        done
+        [ "$total_sdk" -eq 0 ] && echo '  none found'
+        echo
+        echo '-- Hard-coded model names (top 20) --'
+        models=$(grep -rIohE $EXCL $INC "['\"](gpt-[0-9a-z.-]+|o[134](-mini|-preview)?|claude-[0-9a-z.-]+|gemini-[0-9a-z.-]+|mistral-[a-z0-9.-]+|llama-?[0-9][a-z0-9.-]*|command-r[a-z0-9.-]*|deepseek-[a-z0-9.-]+)['\"]" "$SCAN_PATH" 2>/dev/null | tr -d "'\"" | sort | uniq -c | sort -rn | head -20)
+        if [ -n "$models" ]; then echo "$models" | sed 's/^/  /'; else echo '  none found'; fi
+        echo
+        echo '-- Summary --'
+        echo "  SDK import matches (files, per pattern summed): $total_sdk"
+        echo '  This is a pattern-matching heuristic. It can miss indirect usage and flag false positives. It is not an audit or a certification.'
+        echo
+        echo 'Full written audit: https://renevibe76.gumroad.com/l/vdmrtn?ref=gh-action'
