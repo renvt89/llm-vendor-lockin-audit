@@ -1,5 +1,7 @@
 # LLM Lock-in Scan (GitHub Action)
 
+**Answer "Which LLM providers does your code call?" on a vendor-risk or security questionnaire with evidence from your own repo, not from memory.** This free Action lists every LLM SDK import and hard-coded model name on each pull request, so the list stays current. It is a starting list for review, not an audit or a certification.
+
 A read-only, heuristic scan that lists:
 
 - LLM provider SDK imports and requires (openai, anthropic, google-genai / generative-ai, vertexai, cohere, mistralai, groq, together, replicate, Bedrock client, LangChain provider packages)
@@ -37,6 +39,6 @@ This is pattern matching, not a parser:
 
 The paid CLI is a separate product. It scores portability from 0 to 100, writes a per-file migration checklist and includes a refactor playbook.
 
-Full written audit: https://renevibe76.gumroad.com/l/vdmrtn?ref=gh-action
+Full written audit: https://renevibe76.gumroad.com/l/vdmrtn?ref=gh-mkt
 
 License: MIT
